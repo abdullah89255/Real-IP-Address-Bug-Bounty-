@@ -92,3 +92,108 @@ If in scope, these are often accepted:
 ---
 
 
+# Polished checklist with emojis
+
+* ⚠️ **Scope & Authorization first.** Only test in-scope targets.
+* 🐢 **Passive → light active.** Start passive (no direct traffic), escalate only if permitted.
+* 🛡️ **Non-destructive only.** No destructive actions, no privilege escalation attempts.
+* 🧾 **Record everything.** Timestamps, commands, screenshots, logs.
+* 🚦 **Rate-limit & safety switches.** Stop or slow scans on errors or high error rates.
+
+---
+
+# Automation tools (safe uses) + example commands 🧰💻
+
+> All examples below are tuned for **passive discovery** or **light, permitted** verification. Always confirm program rules before running active scans.
+
+### Passive discovery & asset expansion
+
+* **crt.sh** (web) — check cert transparency (manual). 🔍
+* **amass** (passive enum)
+
+```bash
+amass enum -passive -d example.com -o amass_passive.txt
+```
+
+* **subfinder** (passive only)
+
+```bash
+subfinder -d example.com -silent -o subfinder_passive.txt
+```
+
+* **assetfinder**
+
+```bash
+assetfinder --subs-only example.com > assetfinder_subs.txt
+```
+
+### Historical paths & endpoints
+
+* **waybackurls**
+
+```bash
+cat subdomains.txt | waybackurls | tee wayback_urls.txt
+```
+
+* **gau** (get all urls)
+
+```bash
+cat subdomains.txt | gau --subs > gau_urls.txt
+```
+
+### Lightweight HTTP probing (non-destructive)
+
+* **httpx** (host header tests, fingerprint)
+
+```bash
+cat hosts.txt | httpx -threads 40 -status-code -title -server -timeout 10s -o httpx_results.txt
+# Test specific host headers (check vhost/staging)
+echo "http://203.0.113.10" | httpx -H "Host: staging.example.com" -status-code -title
+```
+
+### Passive service & banner lookup
+
+* **Shodan / Censys** — search web UI or API for IP banners (passive). 🔎
+
+### Light port discovery (only if explicitly allowed)
+
+* **naabu** (fast, but use rate limits)
+
+```bash
+naabu -iL ips.txt -top-ports 100 -rate 100 -o naabu_ports.txt
+```
+
+* **nmap** (conservative)
+
+```bash
+# low-volume, stealthy scan (only if allowed)
+nmap -Pn -sS -T2 --min-rate 50 --max-retries 1 -p- -iL ips.txt -oA nmap_safe
+```
+
+> ⚠️ nmap/naabu can be noisy — confirm scope & rate limits.
+
+### Template scanning & verification (non-exploit templates first)
+
+* **nuclei** (use discovery templates; avoid "exploit" templates unless explicitly allowed)
+
+```bash
+# run ONLY discovery templates and informational findings
+nuclei -l hosts.txt -t nuclei-templates/discovery -severity low,medium,high -rate-limit 50 -o nuclei_discovery.txt
+```
+
+* To **exclude** potentially harmful templates, maintain a curated template list and run only those.
+
+### TLS & cert inspection
+
+* **openssl / sslscan / sslyze**
+
+```bash
+echo | openssl s_client -connect 203.0.113.10:443 -servername example.com 2>/dev/null | openssl x509 -noout -text | grep -i "Subject:"
+```
+
+---
+
+
+
+
+
